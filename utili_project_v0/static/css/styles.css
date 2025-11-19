@@ -1,0 +1,48 @@
+/* ทั่วไป */
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.chart-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* เดิมใช้กับตาราง (เผื่ออนาคตจะใช้ต่อ) */
+.clickable-row:hover {
+  background-color: #f0f9ff;
+  cursor: pointer;
+}
+
+.filter-active {
+  background-color: #dbeafe;
+  font-weight: bold;
+}
+
+/* Spinner Loading */
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1a73e8;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 200px;
+  text-align: center;
+  color: #6B7280;
+}

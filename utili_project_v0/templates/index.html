@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <base target="_top">
+
+  <!-- Google Charts -->
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <!-- ฟอนต์ Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Kanit', 'sans-serif'] },
+          colors: {
+            'primary-blue': '#1a73e8',
+            'capex-red': '#DC2626',
+            'capex-dark': '#374151',
+            'monthly-rev-green': '#10B981',
+            'monthly-exp-orange': '#F59E0B',
+            'dep-gray': '#6B7280',
+            'cum-exp-purple': '#9333EA',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- CSS ของเราเอง -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+</head>
+
+<body class="bg-gray-50 text-gray-800 p-4 font-sans antialiased">
+<div class="max-w-7xl mx-auto">
+
+  <!-- ส่วนหัวของ Dashboard -->
+  <h4 class="text-3xl font-extrabold mb-4 text-primary-blue border-b-4 border-primary-blue pb-2 tracking-tight">
+    กราฟวิเคราะห์จุดคุ้มทุน (Break-Even Analysis) เครื่องมือแพทย์
+  </h4>
+
+  <!-- ส่วน Dropdowns สำหรับเลือกเครื่องมือ -->
+  <div class="mb-6 bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label for="bmeNameSelector" class="block text-lg font-bold text-gray-700 mb-2">1. เลือกชื่อเครื่อง:</label>
+        <select id="bmeNameSelector"
+                class="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-primary-blue focus:border-primary-blue transition duration-150 ease-in-out text-gray-800 text-base">
+          <option value="">-- กำลังโหลด --</option>
+        </select>
+      </div>
+      <div>
+        <label for="brandModelSelector" class="block text-lg font-bold text-gray-700 mb-2">2. เลือก Brand/Model:</label>
+        <select id="brandModelSelector"
+                class="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-primary-blue focus:border-primary-blue transition duration-150 ease-in-out text-gray-800 text-base"
+                disabled>
+          <option value="">--</option>
+        </select>
+      </div>
+      <div>
+        <label for="aeTitleSelector" class="block text-lg font-bold text-gray-700 mb-2">3. เลือก AE Title:</label>
+        <select id="aeTitleSelector"
+                class="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-primary-blue focus:border-primary-blue transition duration-150 ease-in-out text-gray-800 text-base"
+                disabled>
+          <option value="">--</option>
+        </select>
+      </div>
+    </div>
+    <p id="chartTitle" class="mt-3 text-sm text-gray-500 italic">โปรดเลือกเครื่องมือแพทย์ให้ครบ 3 ขั้นตอน</p>
+  </div>
+
+  <!-- ส่วนแสดงผลกราฟ (Layout Grid) -->
+  <div class="lg:grid lg:grid-cols-3 lg:gap-6">
+
+    <!-- ซ้าย: กราฟสะสม + รายเดือน -->
+    <div class="lg:col-span-2 w-full flex flex-col gap-6">
+
+      <!-- กราฟสะสม -->
+      <div id="chart_cumulative_container"
+           class="w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3"
+           style="height: 550px;">
+        <div id="chart_div_cumulative" class="chart-container">
+          <div class="loading-container">
+            <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- กราฟรายเดือน -->
+      <div id="chart_monthly_container"
+           class="w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3"
+           style="height: 450px;">
+        <div id="chart_div_monthly" class="chart-container">
+          <div class="loading-container">
+            <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ขวา: กราฟรายละเอียดหัตถการ -->
+    <div id="chart_details_container"
+         class="lg:col-span-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3 mt-6 lg:mt-0 flex flex-col"
+         style="height: 550px;">
+      <h5 id="table_title" class="text-xl font-bold text-gray-800 mb-3">รายละเอียดหัตถการ</h5>
+      <div id="filter_status" class="mb-3">
+        <p class="text-sm text-gray-500 italic">
+          คลิกที่กราฟรายเดือน (เดือน) หรือกราฟหัตถการ (Service) เพื่อกรองข้อมูล
+        </p>
+      </div>
+
+      <div id="chart_div_service_details"
+           class="chart-container flex-grow"
+           style="height:auto; min-height:300px;">
+        <div class="loading-container" style="height:100%;">
+          <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div id="service_pagination_controls"
+           class="flex justify-between items-center mt-2"
+           style="display: none;">
+        <button id="btn_prev_service"
+                class="px-4 py-2 bg-gray-200 rounded-lg shadow hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+          &lt; ก่อนหน้า
+        </button>
+        <span id="service_page_indicator" class="text-sm text-gray-600"></span>
+        <button id="btn_next_service"
+                class="px-4 py-2 bg-gray-200 rounded-lg shadow hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+          ถัดไป &gt;
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JS หลัก -->
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
