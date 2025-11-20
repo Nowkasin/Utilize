@@ -1,18 +1,15 @@
 import os
 
-# ตำแหน่งไฟล์ Excel หลัก
-EXCEL_FILE_PATH = os.path.join('data', 'DemoUtilize.xlsx')
-
-# ชื่อชีตใน Excel
+# ชื่อ table ใน dataabase
 SHEET_NAMES = {
-    'PACS': 'Pivot_PACS',
-    'HIS': 'HIS',
-    'COST': 'COST',
-    'BME': 'BME',
-    'SAP': 'SAP',
+    'PACS': 'UTILIZE_PACS2',
+    'HIS': 'HIS_MASTER_TREATMENT_CODE',
+    'COST': 'UTILIZE_COST_XRAY',
+    'BME': 'UTILIZE_BME',
+    'SAP': 'UTILIZE_SAP',
 }
 
-# ชื่อคอลัมน์ในแต่ละชีต
+# ชื่อคอลัมน์ในแต่ละ Table
 COLS = {
     # BME
     

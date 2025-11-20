@@ -2,7 +2,6 @@ import os
 
 from flask import Flask, jsonify, render_template
 
-from config import EXCEL_FILE_PATH
 from data_cache import get_lookup_maps
 from services import get_initial_bme_map, build_device_data_response
 
@@ -14,7 +13,7 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     # ชื่อ template ให้ตรงกับไฟล์ในโฟลเดอร์ templates
-    # เช่น ถ้าใช้ ChartDashboard.html เหมือนเดิมให้ใส่ชื่อนั้น
+    # เช่น ถ้าใช้ index.html ตามนี้ก็โอเค
     return render_template('index.html')
 
 
@@ -55,16 +54,22 @@ def api_device_data(ae_title):
 # ---------- Run ---------- #
 
 if __name__ == '__main__':
-    print("Starting Flask server...")
-    print(f"Reading Excel from: {os.path.abspath(EXCEL_FILE_PATH)}")
+    print("Starting Flask server (DB mode)...")
 
-    if not os.path.exists(EXCEL_FILE_PATH):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print(f"!! ERROR: ไม่พบไฟล์ Excel ที่: {EXCEL_FILE_PATH}")
-        print("!! กรุณาตรวจสอบการตั้งค่า EXCEL_FILE_PATH ใน config.py")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    else:
-        # preload cache ตอนเริ่ม เพื่อให้ request แรกไม่หน่วง
+    try:
+        # preload cache จาก database ตอนเริ่มต้น
         get_lookup_maps()
-        print("Server is running on http://127.0.0.1:5000")
-        app.run(debug=True, port=5000)
+        print("Lookup maps & dataframes loaded from database.")
+    except Exception as e:
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!! ERROR: ไม่สามารถโหลดข้อมูลจากฐานข้อมูลได้")
+        print(f"!! Detail: {e}")
+        print("!! กรุณาตรวจสอบการตั้งค่า .env และการเชื่อมต่อ SQL Server")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        import traceback
+        traceback.print_exc()
+        # **สำคัญ**: ไม่ raise แล้ว ปล่อยให้ Flask รันต่อ
+        print("จะรัน Flask ต่อไป แต่ API ที่ใช้ดึงข้อมูลจาก DB จะ error จนกว่าจะแก้ connection ได้")
+
+    print("Server is running on http://127.0.0.1:5000")
+    app.run(debug=True, port=5000)
