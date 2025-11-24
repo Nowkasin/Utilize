@@ -1,18 +1,18 @@
+<!-- แบบ 2 กลาง 1 ใหญ่ -->
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
   <base target="_top">
 
-  <!-- Google Charts -->
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
-  <!-- ฟอนต์ Kanit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -33,20 +33,16 @@
     }
   </script>
 
-  <!-- CSS ของเราเอง -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
 <body class="bg-gray-50 text-gray-800 p-4 font-sans antialiased">
 <div class="max-w-7xl mx-auto">
 
-  <!-- ส่วนหัวของ Dashboard -->
   <h4 class="text-3xl font-extrabold mb-4 text-primary-blue border-b-4 border-primary-blue pb-2 tracking-tight">
     กราฟวิเคราะห์จุดคุ้มทุน (Break-Even Analysis) เครื่องมือแพทย์
   </h4>
 
-  <!-- ส่วน Dropdowns สำหรับเลือกเครื่องมือ -->
   <div class="mb-6 bg-white p-4 rounded-xl shadow-lg border border-gray-200">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
@@ -73,32 +69,30 @@
         </select>
       </div>
     </div>
-    <p id="chartTitle" class="mt-3 text-sm text-gray-500 italic">โปรดเลือกเครื่องมือแพทย์ให้ครบ 3 ขั้นตอน</p>
+    <p id="chartTitle" class="mt-3 text-sm text-gray-500 italic">
+      โปรดเลือกเครื่องมือแพทย์ให้ครบ 3 ขั้นตอน
+    </p>
   </div>
 
-  <!-- ส่วนแสดงผลกราฟ (Layout Grid) -->
-  <div class="lg:grid lg:grid-cols-3 lg:gap-6">
+  <div class="space-y-6">
 
-    <!-- ซ้าย: กราฟสะสม + รายเดือน -->
-    <div class="lg:col-span-2 w-full flex flex-col gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 lg:gap-6">
 
-      <!-- กราฟสะสม -->
       <div id="chart_cumulative_container"
            class="w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3"
-           style="height: 550px;">
-        <div id="chart_div_cumulative" class="chart-container">
-          <div class="loading-container">
+           style="height: 480px;">
+        <div id="chart_div_cumulative" class="chart-container h-full">
+          <div class="loading-container h-full flex items-center justify-center">
             <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
           </div>
         </div>
       </div>
 
-      <!-- กราฟรายเดือน -->
       <div id="chart_monthly_container"
            class="w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3"
-           style="height: 450px;">
-        <div id="chart_div_monthly" class="chart-container">
-          <div class="loading-container">
+           style="height: 480px;">
+        <div id="chart_div_monthly" class="chart-container h-full">
+          <div class="loading-container h-full flex items-center justify-center">
             <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
           </div>
         </div>
@@ -106,11 +100,13 @@
 
     </div>
 
-    <!-- ขวา: กราฟรายละเอียดหัตถการ -->
     <div id="chart_details_container"
-         class="lg:col-span-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3 mt-6 lg:mt-0 flex flex-col"
-         style="height: 550px;">
-      <h5 id="table_title" class="text-xl font-bold text-gray-800 mb-3">รายละเอียดหัตถการ</h5>
+         class="w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3 flex flex-col"
+         style="min-height: 500px;">
+      <h5 id="table_title" class="text-xl font-bold text-gray-800 mb-3">
+        รายละเอียดหัตถการ
+      </h5>
+
       <div id="filter_status" class="mb-3">
         <p class="text-sm text-gray-500 italic">
           คลิกที่กราฟรายเดือน (เดือน) หรือกราฟหัตถการ (Service) เพื่อกรองข้อมูล
@@ -119,15 +115,14 @@
 
       <div id="chart_div_service_details"
            class="chart-container flex-grow"
-           style="height:auto; min-height:300px;">
-        <div class="loading-container" style="height:100%;">
+           style="min-height: 320px;">
+        <div class="loading-container h-full flex items-center justify-center">
           <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
         </div>
       </div>
 
-      <!-- Pagination -->
       <div id="service_pagination_controls"
-           class="flex justify-between items-center mt-2"
+           class="flex justify-between items-center mt-3"
            style="display: none;">
         <button id="btn_prev_service"
                 class="px-4 py-2 bg-gray-200 rounded-lg shadow hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -144,8 +139,11 @@
   </div>
 </div>
 
-<!-- JS หลัก -->
-
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/config.js') }}"></script>
+<script src="{{ url_for('static', filename='js/state.js') }}"></script>
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ui.js') }}"></script>
 </body>
 </html>
+

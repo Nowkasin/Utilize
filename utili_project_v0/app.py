@@ -1,5 +1,5 @@
 import os
-
+import traceback
 from flask import Flask, jsonify, render_template
 
 from data_cache import get_lookup_maps
@@ -23,7 +23,8 @@ def api_initial_data():
         bme_map = get_initial_bme_map()
         return jsonify({'bmeMap': bme_map})
     except Exception as e:
-        print(f"Error in /api/initial-data: {e}")
+        print("Error in /api/initial-data:", e)
+        traceback.print_exc()  # << เพิ่มบรรทัดนี้
         return jsonify({'error': str(e)}), 500
 
 
