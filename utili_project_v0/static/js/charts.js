@@ -123,11 +123,13 @@ function drawChartAndTable() {
     return;
   }
 
-  const data = new google.visualization.DataTable();
+   const data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
-  data.addColumn('number', 'Monthly Revenue (P/L)');
+  // ใช้กำไร/ขาดทุนต่อเดือน
+  data.addColumn('number', 'Monthly Profit (P/L)');
   data.addColumn({ type: 'string', role: 'style' });
-  data.addColumn('number', 'Cumulative Revenue (P/L)');
+  // ใช้กำไร/ขาดทุนสะสม
+  data.addColumn('number', 'Cumulative Profit (P/L)');
   data.addColumn({ type: 'string', role: 'style' });
   data.addColumn('number', 'Monthly Expense (SAP)');
   data.addColumn({ type: 'string', role: 'style' });
@@ -137,6 +139,7 @@ function drawChartAndTable() {
   data.addColumn({ type: 'string', role: 'style' });
   data.addColumn('number', 'Monthly Depreciation');
   data.addColumn({ type: 'string', role: 'style' });
+
   data.addRows(seriesData);
 
   // เผื่อมีอะไรพังในแต่ละ chart → log ให้เห็นชัด ๆ
@@ -336,22 +339,24 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
     start + state.servicePageSize
   );
 
-  const data = new google.visualization.DataTable();
+    const data = new google.visualization.DataTable();
   data.addColumn('string', 'Service');
   data.addColumn('number', 'จำนวน (ครั้ง)');
   data.addColumn({ type: 'string', role: 'style' });
-  data.addColumn('number', 'รายได้ (P/L)');
+  // กราฟแกนขวาให้แสดงกำไร/ขาดทุน
+  data.addColumn('number', 'กำไร (P/L)');
   data.addColumn({ type: 'string', role: 'style' });
   data.addColumn({ type: 'string', role: 'tooltip' });
+
 
   for (const d of pageRows) {
     const label = d.serviceCode || '-';
     const count = d.totalCount;
     const revenue = d.totalRevenuePL;
-    const tooltip =
+        const tooltip =
       `หัตถการ: [${d.serviceCode}] ${d.serviceName}\n` +
       `จำนวน: ${count.toLocaleString()} ครั้ง\n` +
-      `รายได้: ${formatShortNumber(revenue)} บาท`;
+      `กำไร/ขาดทุน: ${formatShortNumber(revenue)} บาท`;
 
     const isSelected = d.serviceCode === serviceFilter;
     const opacity = !serviceFilter || isSelected ? '1.0' : '0.3';
@@ -380,14 +385,15 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
       0: { type: 'bars', targetAxisIndex: 0, color: COLORS.serviceCount },
       1: { type: 'line', targetAxisIndex: 1, color: COLORS.serviceRevenue }
     },
-    vAxes: {
+        vAxes: {
       0: { title: 'จำนวน (ครั้ง)', textStyle: { color: COLORS.serviceCount } },
       1: {
-        title: 'รายได้ (P/L)',
+        title: 'กำไร (P/L)',
         format: 'short',
         textStyle: { color: COLORS.serviceRevenue }
       }
     }
+
   };
 
   if (!state.chartServiceDetails) {

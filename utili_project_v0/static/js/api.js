@@ -4,10 +4,6 @@
 // ---------------------- FETCH HELPER ---------------------- //
 
 /**
- * ดึง JSON จาก backend แบบปลอดภัย + รองรับ timeout
- * - ถ้า response ไม่ใช่ 2xx → โยน Error พร้อมข้อความจาก backend ถ้ามี
- * - ถ้า body เป็น { error: "..." } แล้วคุณอยากเช็กเอง ให้เช็กที่ caller
- *   (ใน loadInitialData / loadDeviceData มีเช็กอยู่แล้ว)
  *
  * @param {string} url
  * @param {object} options  - { timeoutMs?: number }
