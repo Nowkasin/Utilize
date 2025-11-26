@@ -1,6 +1,6 @@
 import os
 import traceback
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template # type: ignore
 
 from data_cache import get_lookup_maps
 from services import get_initial_bme_map, build_device_data_response
