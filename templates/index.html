@@ -104,21 +104,46 @@
          class="w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3 flex flex-col"
          style="min-height: 500px;">
       <h5 id="table_title" class="text-xl font-bold text-gray-800 mb-3">
-        รายละเอียดหัตถการ
+        จำนวนครั้งการใช้งานแยกตามรหัสหัตถการ
       </h5>
 
-      <div id="filter_status" class="mb-3">
-        <p class="text-sm text-gray-500 italic">
-          คลิกที่กราฟรายเดือน (เดือน) หรือกราฟหัตถการ (Service) เพื่อกรองข้อมูล
-        </p>
+      <!-- แถบสถานะ + ฟิลเตอร์ปี -->
+      <div class="mb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div id="filter_status">
+          <p class="text-sm text-gray-500 italic">
+            คลิกที่กราฟ "รายเดือน" หรือกราฟ "หัตถการ" เพื่อกรองข้อมูล
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="year_filter_selector" class="text-sm font-medium text-gray-700">
+            กรองตามปี:
+          </label>
+          <select id="year_filter_selector"
+                  class="px-2 py-1 border border-gray-300 rounded-lg text-sm bg-white focus:ring-primary-blue focus:border-primary-blue">
+            <option value="">ทุกปี</option>
+          </select>
+        </div>
       </div>
 
-      <div id="chart_div_service_details"
-           class="chart-container flex-grow"
-           style="min-height: 320px;">
-        <div class="loading-container h-full flex items-center justify-center">
-          <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
+      <!-- กราฟหัตถการ 2 อัน (จำนวนครั้ง / รายได้) วางข้างกัน -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-grow">
+
+        <div id="chart_div_service_details"
+             class="chart-container"
+             style="min-height: 320px;">
+          <div class="loading-container h-full flex items-center justify-center">
+            <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
+          </div>
         </div>
+
+        <div id="chart_div_service_revenue"
+             class="chart-container"
+             style="min-height: 320px;">
+          <div class="loading-container h-full flex items-center justify-center">
+            <div class="text-xl text-gray-500">โปรดเลือกเครื่องมือแพทย์</div>
+          </div>
+        </div>
+
       </div>
 
       <div id="service_pagination_controls"
@@ -142,8 +167,14 @@
 <script src="{{ url_for('static', filename='js/config.js') }}"></script>
 <script src="{{ url_for('static', filename='js/state.js') }}"></script>
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+
+<!-- ไฟล์ใหม่ที่เก็บ logic รวมข้อมูล -->
+<script src="{{ url_for('static', filename='js/charts-data.js') }}"></script>
+
+<!-- ไฟล์เดิมที่ใช้วาดกราฟ (อาศัยฟังก์ชันจาก charts-data.js) -->
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
 <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+
 </body>
 </html>
-

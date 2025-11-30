@@ -1,97 +1,3 @@
-// charts.js
-// ฟังก์ชันเกี่ยวกับการรวมข้อมูล และวาดกราฟทั้งหมด
-
-// ---------------------- DATA AGGREGATION ---------------------- //
-function aggregateDataForChart(aeTitle, serviceFilter) {
-  const device = state.bmeMap[aeTitle];
-  if (!device) {
-    console.error('[aggregateDataForChart] ไม่พบ device ใน bmeMap สำหรับ', aeTitle);
-    return [];
-  }
-
-  if (!Array.isArray(state.allUniqueDates) || state.allUniqueDates.length === 0) {
-    console.error('[aggregateDataForChart] allUniqueDates ว่างหรือไม่ใช่ array', state.allUniqueDates);
-    return [];
-  }
-
-  const { capEx, monthlyDep, depMonths, orderNum } = device;
-
-  // filter PACS ตาม aeTitle + serviceFilter (ถ้ามี)
-  const filteredPacs = Array.isArray(state.pacsDataDetails)
-    ? state.pacsDataDetails.filter(
-        d => d.aeTitle === aeTitle && (!serviceFilter || d.serviceCode === serviceFilter)
-      )
-    : [];
-
-  // รวมรายได้ P/L เป็นรายเดือน
-  const monthlyRevenueMap = new Map();
-  for (const item of filteredPacs) {
-    const ym = item.yearMonth;
-    if (!ym) continue;
-    monthlyRevenueMap.set(ym, (monthlyRevenueMap.get(ym) || 0) + (item.revenuePL || 0));
-  }
-
-  let cumRevenuePL = 0;
-  let cumExpenseSAP = 0;
-  let depCounter = 0;
-  const rows = [];
-
-  const sapMap = state.sapMap || {};
-  const todayStr = state.todayStr || null;
-
-  for (const dateStr of state.allUniqueDates) {
-    const yearMonth = dateStr.substring(0, 7);
-    const isFuture = todayStr && dateStr > todayStr;
-
-    const lineStyle = isFuture ? 'stroke-dasharray: 4 4; opacity: 0.2;' : null;
-    const barStyle = isFuture ? `fill: ${COLORS.futureBarFill}; opacity: 0.5;` : null;
-
-    const monthlyRevenuePL = isFuture ? 0 : (monthlyRevenueMap.get(yearMonth) || 0);
-    cumRevenuePL += monthlyRevenuePL;
-
-    const sapKey = `${orderNum}-${yearMonth}`;
-    const monthlyExpenseSAP =
-      isFuture || serviceFilter ? 0 : (sapMap[sapKey] || 0);
-    cumExpenseSAP += monthlyExpenseSAP;
-
-    let fixedDep = 0;
-    const fixedCapEx = capEx;
-    if (depCounter < depMonths) {
-      fixedDep = !serviceFilter ? monthlyDep : 0;
-      depCounter++;
-    }
-
-    rows.push([
-      new Date(dateStr),          // 0 Date
-      monthlyRevenuePL,           // 1 Monthly Revenue
-      barStyle,                   // 2 style (revenue bar)
-      cumRevenuePL,               // 3 Cum Revenue
-      lineStyle,                  // 4 style (cum rev line)
-      monthlyExpenseSAP,          // 5 Monthly Expense
-      barStyle,                   // 6 style (expense bar)
-      cumExpenseSAP,              // 7 Cum Expense
-      lineStyle,                  // 8 style (cum exp line)
-      fixedCapEx,                 // 9 CapEx
-      lineStyle,                  //10 style (capex line)
-      fixedDep,                   //11 Dep
-      lineStyle                   //12 style (dep line)
-    ]);
-  }
-
-  console.log('[aggregateDataForChart] rows length', rows.length);
-  return rows;
-}
-
-
-function getInitialDateRange(aeTitle) {
-  const device = state.bmeMap[aeTitle];
-  if (!device?.installDate) return null;
-
-  const start = new Date(device.installDate);
-  const end = new Date(start);
-  end.setFullYear(start.getFullYear() + 3);
-  return { start, end };
-}
 
 // ---------------------- DRAW CHARTS (MAIN) ---------------------- //
 function drawChartAndTable() {
@@ -123,26 +29,28 @@ function drawChartAndTable() {
     return;
   }
 
-   const data = new google.visualization.DataTable();
+  const data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
-  // ใช้กำไร/ขาดทุนต่อเดือน
-  data.addColumn('number', 'Monthly Profit (P/L)');
+  // ใช้ "รายได้ต่อเดือน" แทน "กำไร"
+  data.addColumn('number', 'รายได้ต่อเดือน (P/L)');
   data.addColumn({ type: 'string', role: 'style' });
-  // ใช้กำไร/ขาดทุนสะสม
-  data.addColumn('number', 'Cumulative Profit (P/L)');
+  // ใช้ "รายได้สะสม"
+  data.addColumn('number', 'รายได้สะสม (P/L)');
   data.addColumn({ type: 'string', role: 'style' });
-  data.addColumn('number', 'Monthly Expense (SAP)');
+  data.addColumn('number', 'รายจ่ายต่อเดือน (SAP)');
   data.addColumn({ type: 'string', role: 'style' });
-  data.addColumn('number', 'Cumulative Expense (SAP)');
+  data.addColumn('number', 'รายจ่ายสะสม (SAP)');
   data.addColumn({ type: 'string', role: 'style' });
-  data.addColumn('number', 'CAPEX (Break-Even)');
+  data.addColumn('number', 'ราคาเครื่อง (Break-Even)');
   data.addColumn({ type: 'string', role: 'style' });
-  data.addColumn('number', 'Monthly Depreciation');
+  data.addColumn('number', 'ค่าเสื่อมต่อเดือน');
   data.addColumn({ type: 'string', role: 'style' });
 
   data.addRows(seriesData);
 
-  // เผื่อมีอะไรพังในแต่ละ chart → log ให้เห็นชัด ๆ
+  // ใช้กับระบบ zoom (ข้อ 4 ด้วย)
+  initChartDateBounds(data);
+
   try {
     drawMonthlyChart(data, displayTitle);
   } catch (e) {
@@ -173,6 +81,7 @@ function drawChartAndTable() {
 
   updateFilterStatus();
 }
+
 
 
 // ---------------------- MONTHLY CHART ---------------------- //
@@ -237,9 +146,51 @@ function drawMonthlyChart(fullData, displayTitle) {
 
 // ---------------------- CUMULATIVE CHART ---------------------- //
 function drawCumulativeChart(fullData, displayTitle) {
-  const range = getInitialDateRange(state.currentAeTitle);
+  const window = state.chartDateWindow || getInitialDateRange(state.currentAeTitle);
+
+  // หาแถวที่ "รายได้สะสม" ตัดกับ "ราคาเครื่อง"
+  let breakEvenRow = null;
+  try {
+    const numRows = fullData.getNumberOfRows();
+    if (numRows > 0) {
+      const capex = fullData.getValue(0, 9);
+      if (capex != null) {
+        let prev = fullData.getValue(0, 3);
+        if (prev >= capex) breakEvenRow = 0;
+        for (let i = 1; i < numRows && breakEvenRow === null; i++) {
+          const cur = fullData.getValue(i, 3);
+          if (prev < capex && cur >= capex) {
+            breakEvenRow = i;
+            break;
+          }
+          prev = cur;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[drawCumulativeChart] cannot compute break-even point', err);
+  }
+
   const view = new google.visualization.DataView(fullData);
-  view.setColumns([0, 3, 4, 7, 8, 9, 10]);
+  view.setColumns([
+    0, // date
+    3, // cumulative revenue
+    4, // style
+    {
+      type: 'string',
+      role: 'annotation',
+      calc: function (dt, row) {
+        if (breakEvenRow != null && row === breakEvenRow) {
+          return '⬆ จุดคุ้มทุน';
+        }
+        return null;
+      }
+    },
+    7, // cumulative expense
+    8, // style
+    9, // capex
+    10 // style
+  ]);
 
   const options = {
     title: `สะสม: ${displayTitle}`,
@@ -250,11 +201,12 @@ function drawCumulativeChart(fullData, displayTitle) {
     hAxis: {
       title: 'วันที่',
       format: 'MMM yyyy',
-      viewWindow: range ? { min: range.start, max: range.end } : undefined
+      viewWindowMode: window ? 'explicit' : 'pretty',
+      viewWindow: window ? { min: window.start, max: window.end } : undefined
     },
     seriesType: 'line',
     series: {
-      0: { color: COLORS.revenueCumulative, lineWidth: 2, pointSize: 5 },
+      0: { color: COLORS.revenueCumulative, lineWidth: 2, pointSize: 6 },
       1: { color: COLORS.expenseCumulative, lineWidth: 2, pointSize: 5 },
       2: {
         color: COLORS.capex,
@@ -262,6 +214,11 @@ function drawCumulativeChart(fullData, displayTitle) {
         lineDashStyle: [4, 4],
         pointSize: 0
       }
+    },
+    annotations: {
+      stem: { length: 16 },
+      style: 'point',
+      textStyle: { fontSize: 12 }
     },
     explorer: { axis: 'horizontal', keepInBounds: true, maxZoomIn: 0.1 }
   };
@@ -295,13 +252,28 @@ function drawCumulativeChart(fullData, displayTitle) {
 
 // ---------------------- SERVICE DETAILS CHART ---------------------- //
 function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
-  const container = $(CONFIG.domIds.chartServiceDetails);
-  const filtered = state.pacsDataDetails.filter(
-    d => d.aeTitle === aeTitle && (!monthFilter || d.yearMonth === monthFilter)
-  );
+  const containerCount = $(CONFIG.domIds.chartServiceDetails);
+  const containerRevenue = document.getElementById('chart_div_service_revenue');
+
+  // อัปเดตตัวเลือกปีใน dropdown
+  updateYearFilterUI(aeTitle);
+
+  const allDetails = Array.isArray(state.pacsDataDetails)
+    ? state.pacsDataDetails
+    : [];
+  const yearFilter = state.currentYearFilter || null;
+
+  const filtered = allDetails.filter(d => {
+    if (d.aeTitle !== aeTitle) return false;
+    if (monthFilter && d.yearMonth !== monthFilter) return false;
+    if (yearFilter && (!d.yearMonth || d.yearMonth.substring(0, 4) !== yearFilter)) return false;
+    return true;
+  });
 
   if (!filtered.length) {
-    container.innerHTML = buildPlaceholderHtml(TEXTS.noServiceData);
+    const html = buildPlaceholderHtml(TEXTS.noServiceData);
+    containerCount.innerHTML = html;
+    if (containerRevenue) containerRevenue.innerHTML = html;
     $(CONFIG.domIds.servicePaginationControls).style.display = 'none';
     return;
   }
@@ -322,6 +294,7 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
     s.totalRevenuePL += d.revenuePL || 0;
   }
 
+  // เรียงตาม Top รายได้
   state.sortedServiceSummary = Array.from(serviceSummary.values()).sort(
     (a, b) => b.totalRevenuePL - a.totalRevenuePL
   );
@@ -339,24 +312,32 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
     start + state.servicePageSize
   );
 
-    const data = new google.visualization.DataTable();
+  // -------- กราฟ 1: จำนวนครั้งการใช้งานแยกตามรหัสหัตถการ --------
+  const data = new google.visualization.DataTable();
   data.addColumn('string', 'Service');
   data.addColumn('number', 'จำนวน (ครั้ง)');
   data.addColumn({ type: 'string', role: 'style' });
-  // กราฟแกนขวาให้แสดงกำไร/ขาดทุน
-  data.addColumn('number', 'กำไร (P/L)');
+  data.addColumn('number', 'รายได้ (P/L)');
   data.addColumn({ type: 'string', role: 'style' });
   data.addColumn({ type: 'string', role: 'tooltip' });
 
+  // -------- กราฟ 2: รายได้แยกตามรหัสหัตถการ --------
+  const dataRevenue = new google.visualization.DataTable();
+  dataRevenue.addColumn('string', 'Service');
+  dataRevenue.addColumn('number', 'รายได้ (P/L)');
+  dataRevenue.addColumn({ type: 'string', role: 'style' });
+  dataRevenue.addColumn('number', 'จำนวน (ครั้ง)');
+  dataRevenue.addColumn({ type: 'string', role: 'style' });
+  dataRevenue.addColumn({ type: 'string', role: 'tooltip' });
 
   for (const d of pageRows) {
     const label = d.serviceCode || '-';
     const count = d.totalCount;
     const revenue = d.totalRevenuePL;
-        const tooltip =
+    const tooltip =
       `หัตถการ: [${d.serviceCode}] ${d.serviceName}\n` +
       `จำนวน: ${count.toLocaleString()} ครั้ง\n` +
-      `กำไร/ขาดทุน: ${formatShortNumber(revenue)} บาท`;
+      `รายได้: ${formatShortNumber(revenue)} บาท`;
 
     const isSelected = d.serviceCode === serviceFilter;
     const opacity = !serviceFilter || isSelected ? '1.0' : '0.3';
@@ -364,6 +345,7 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
     const countColor = isSelected ? COLORS.serviceSelected : COLORS.serviceCount;
     const revenueColor = isSelected ? COLORS.serviceSelected : COLORS.serviceRevenue;
 
+    // กราฟจำนวนครั้ง (แท่ง = จำนวน, เส้น = รายได้)
     data.addRow([
       label,
       count,
@@ -372,10 +354,24 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
       `color: ${revenueColor}; opacity: ${opacity};`,
       tooltip
     ]);
+
+    // กราฟรายได้ (แท่ง = รายได้, เส้น = จำนวน)
+    dataRevenue.addRow([
+      label,
+      revenue,
+      `color: ${revenueColor}; opacity: ${opacity};`,
+      count,
+      `color: ${countColor}; opacity: ${opacity};`,
+      tooltip
+    ]);
   }
 
-  const options = {
-    title: `รายละเอียดหัตถการ ${monthFilter ? `(เดือน ${monthFilter})` : '(รวม)'}`,
+  const baseTitleSuffix = monthFilter
+    ? `(เดือน ${monthFilter}${yearFilter ? ` / ปี ${yearFilter}` : ''})`
+    : (yearFilter ? `(ปี ${yearFilter})` : '(รวม)');
+
+  const optionsCount = {
+    title: `จำนวนครั้งการใช้งานแยกตามรหัสหัตถการ ${baseTitleSuffix}`,
     legend: { position: 'bottom' },
     chartArea: { width: '85%', height: '65%' },
     backgroundColor: { fill: '#fff' },
@@ -385,22 +381,43 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
       0: { type: 'bars', targetAxisIndex: 0, color: COLORS.serviceCount },
       1: { type: 'line', targetAxisIndex: 1, color: COLORS.serviceRevenue }
     },
-        vAxes: {
+    vAxes: {
       0: { title: 'จำนวน (ครั้ง)', textStyle: { color: COLORS.serviceCount } },
       1: {
-        title: 'กำไร (P/L)',
+        title: 'รายได้ (P/L)',
         format: 'short',
         textStyle: { color: COLORS.serviceRevenue }
       }
     }
-
   };
 
-  if (!state.chartServiceDetails) {
-    state.chartServiceDetails = new google.visualization.ComboChart(container);
-  }
+  const optionsRevenue = {
+    title: `รายได้แยกตามรหัสหัตถการ ${baseTitleSuffix}`,
+    legend: { position: 'bottom' },
+    chartArea: { width: '85%', height: '65%' },
+    backgroundColor: { fill: '#fff' },
+    hAxis: { title: 'หัตถการ', slantedText: true, slantAngle: 45 },
+    seriesType: 'bars',
+    series: {
+      // แท่ง = รายได้ (ฟ้า), เส้น = จำนวน (เขียว)
+      0: { type: 'bars', targetAxisIndex: 1, color: COLORS.serviceRevenue },
+      1: { type: 'line', targetAxisIndex: 0, color: COLORS.serviceCount }
+    },
+    vAxes: {
+      0: { title: 'จำนวน (ครั้ง)', textStyle: { color: COLORS.serviceCount } },
+      1: {
+        title: 'รายได้ (P/L)',
+        format: 'short',
+        textStyle: { color: COLORS.serviceRevenue }
+      }
+    }
+  };
 
-  state.chartServiceDetails.draw(data, options);
+  // วาดกราฟจำนวนครั้ง
+  if (!state.chartServiceDetails) {
+    state.chartServiceDetails = new google.visualization.ComboChart(containerCount);
+  }
+  state.chartServiceDetails.draw(data, optionsCount);
 
   google.visualization.events.removeAllListeners(state.chartServiceDetails);
   google.visualization.events.addListener(state.chartServiceDetails, 'select', () => {
@@ -420,7 +437,33 @@ function drawServiceDetailsChart(aeTitle, monthFilter, serviceFilter) {
     drawChartAndTable();
   });
 
-  // pagination UI
+  // วาดกราฟรายได้
+  if (containerRevenue) {
+    if (!state.chartServiceRevenue) {
+      state.chartServiceRevenue = new google.visualization.ComboChart(containerRevenue);
+    }
+    state.chartServiceRevenue.draw(dataRevenue, optionsRevenue);
+
+    google.visualization.events.removeAllListeners(state.chartServiceRevenue);
+    google.visualization.events.addListener(state.chartServiceRevenue, 'select', () => {
+      const sel = state.chartServiceRevenue.getSelection();
+      if (!sel.length) return;
+
+      const row = sel[0].row;
+      if (row == null) return;
+
+      const globalIndex = state.serviceDetailsPage * state.servicePageSize + row;
+      const selected = state.sortedServiceSummary[globalIndex];
+      if (!selected) return;
+
+      const code = selected.serviceCode;
+      state.currentServiceFilter =
+        state.currentServiceFilter === code ? null : code;
+      drawChartAndTable();
+    });
+  }
+
+  // pagination UI ตามของเดิม
   const controls = $(CONFIG.domIds.servicePaginationControls);
   const btnPrev = $(CONFIG.domIds.btnPrevService);
   const btnNext = $(CONFIG.domIds.btnNextService);
